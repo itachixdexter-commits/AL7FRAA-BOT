@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("TELEGRAM_TOKEN", "8799736027:AAFbJqNIScYYsx8bHmn227nBLubTYsgY18I")
 VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "b8163d15425405d2ee349307c044811bc0955078fb7f1057bc99d3dd216bb1bb")
-IPGEOLOCATION_API_KEY = os.getenv("173c932d2f8d4b3e8bf9b8fc842fede9", "")
+IPGEOLOCATION_API_KEY = os.getenv("IPGEOLOCATION_API_KEY", "")
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -131,48 +131,31 @@ async def button_callback(update: Update, context) -> None:
 
 async def get_ip_information(update: Update, context) -> None:
     ip = update.message.text.strip()
-    api_key = os.getenv("IPGEOLOCATION_API_KEY", "")
-    
-    if not api_key:
-        await update.message.reply_text("❌ **خطأ:** لم يتم العثور على مفتاح API. تأكد من إضافته في الإعدادات باسم `IPGEOLOCATION_API_KEY`")
-        context.user_data["state"] = None
-        return
+
 
     msg_wait = await update.message.reply_text("🔍 **جاري جلب معلومات الـ IP التفصيلية...**")
     try:
         async with httpx.AsyncClient() as client:
-            url = f"https://api.ipgeolocation.io/ipgeo?apiKey={api_key}&ip={ip}&include=security,hostname"
+            url = f"http://ip-api.com/json/{ip}?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"
             response = await client.get(url)
             data = response.json()
 
-        if response.status_code == 200:
-            tz = data.get('time_zone', {})
-            asn = data.get('asn', {})
-            sec = data.get('security', {})
-            net = data.get('network', {})
-            cur = data.get('currency', {})
-
+        if data.get(\'status\') == \'success\':
             res = f"📍 **معلومات IP شاملة لـ:** `{ip}`\n\n"
-            res += f"🏛️ **المنظمة:** {asn.get('organization', 'N/A')}\n"
-            res += f"🔢 **رقم ASN:** `{asn.get('as_number', 'N/A')}`\n"
-            res += f"🌐 **اسم ASN:** {asn.get('organization', 'N/A')}\n"
-            res += f"🌍 **القارة:** {data.get('continent_name', 'N/A')}\n"
-            res += f"🏳️ **الدولة:** {data.get('country_name', 'N/A')} ({data.get('country_code2', 'N/A')})\n"
-            res += f"🗺️ **المنطقة:** {data.get('state_prov', 'N/A')}\n"
+            res += f"🏛️ **المنظمة:** {data.get('org', 'N/A')}\n"
+            res += f"🔢 **رقم ASN:** `{data.get(\'as\', \'N/A\').split(\' \')[0] if data.get(\'as\') != \'N/A\' else \'N/A\'}`\n"
+
+            res += f"🌍 **القارة:** {data.get('continent', 'N/A')}\n"
+            res += f"🏳️ **الدولة:** {data.get('country', 'N/A')} ({data.get('countryCode', 'N/A')})\n"
+            res += f"🗺️ **المنطقة:** {data.get('regionName', 'N/A')}\n"
             res += f"🏙️ **المدينة:** {data.get('city', 'N/A')}\n"
-            res += f"🕒 **المنطقة الزمنية:** {tz.get('name', 'N/A')}\n"
-            res += f"⏰ **التوقيت المحلي:** `{tz.get('current_time', 'N/A')}`\n"
-            res += f"📡 **نطاق الشبكة:** `{net.get('route', 'N/A')}`\n"
-            res += f"🌐 **إصدار الـ IP:** {data.get('ip_version', '4')}\n"
-            res += f"📈 **نوع الاستخدام:** {sec.get('usage_type', 'N/A')}\n"
-            res += f"🔄 **نوع الاتصال:** {net.get('connection_type', 'N/A')}\n"
-            res += f"💱 **العملة:** {cur.get('name', 'N/A')} ({cur.get('symbol', 'N/A')})\n\n"
+            res += f"🕒 **المنطقة الزمنية:** {data.get('timezone', 'N/A')}\n"
+            res += f"💱 **العملة:** {data.get(\'currency\', \'N/A\')}\n\n"
             
             res += "🛡️ **فحص الحماية والشبكة:**\n"
-            res += f"🔒 **VPN:** {'✅ نعم' if sec.get('is_vpn') else '❌ لا'}\n"
-            res += f"🛡️ **Proxy:** {'✅ نعم' if sec.get('is_proxy') else '❌ لا'}\n"
-            res += f"🧅 **Tor:** {'✅ نعم' if sec.get('is_tor') else '❌ لا'}\n"
-            res += f"☁️ **Hosting:** {'✅ نعم' if sec.get('is_hosting') else '❌ لا'}\n"
+            res += f"🔒 **VPN/Proxy/Tor:** {'✅ نعم' if data.get('proxy') else '❌ لا'}\n"
+            res += f"☁️ **Hosting:** {'✅ نعم' if data.get('hosting') else '❌ لا'}\n"
+            res += f"📱 **Mobile:** {'✅ نعم' if data.get('mobile') else '❌ لا'}\n"
             
             await msg_wait.edit_text(res, parse_mode="Markdown")
         else:
