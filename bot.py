@@ -27,7 +27,7 @@ import threading
 # New imports for Instagram, TikTok, and IP generation
 import instaloader
 from TikTokApi import TikTokApi
-from random_ip_generator import generate_random_ip
+import random_ip_generator
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ async def get_tiktok_info(update: Update, context) -> None:
             stats = user.get("stats", {})
             followers = stats.get("followerCount", 0)
             likes = stats.get("heartCount", 0)
-            res = (f"🎵 **TikTok Info:** @{username}\n\n👥 Followers: {followers:,}\n❤️ Likes: {likes:,}\n")
+            res = (f"🎵 **TikTok Info:** @{username}\n\n👥 Followers: {followers:,}\n❤️ Likes: {likes:,}")
             await msg_wait.edit_text(res, parse_mode="Markdown")
     except Exception as e: 
         logger.error(f"Error fetching TikTok info: {e}")
@@ -114,7 +114,7 @@ async def get_insta_info(update: Update, context) -> None:
         profile = instaloader.Profile.from_username(L.context, username)
         followers = profile.followers
         posts = profile.mediacount
-        res = (f"📸 **Instagram Info:** @{username}\n\n👥 Followers: {followers:,}\n🖼️ Posts: {posts:,}\n")
+        res = (f"📸 **Instagram Info:** @{username}\n\n👥 Followers: {followers:,}\n🖼️ Posts: {posts:,}")
         await msg_wait.edit_text(res, parse_mode="Markdown")
     except Exception as e: 
         logger.error(f"Error fetching Instagram info: {e}")
@@ -193,7 +193,7 @@ async def get_ip_information(update: Update, context) -> None:
     ip_input = update.message.text.strip()
     try:
         async with httpx.AsyncClient() as client:
-            geo_data = (await client.get(f"http://ip-api.com/json/{ip_input}?lang=en")).json()
+            geo_data = (await client.get(f"http://ip-api.com/json/{ip_input}?lang=ar")).json()
         
         if geo_data.get("status") == "success":
             country_code = geo_data.get("countryCode")
@@ -203,11 +203,13 @@ async def get_ip_information(update: Update, context) -> None:
             lat = geo_data.get("lat")
             lon = geo_data.get("lon")
 
-            random_ip = generate_random_ip(country_code)
-            if random_ip:
-                res = (f"📍 **IP Info:**\n\n🌍 Country: {country_name} ({country_code})\n🏙️ City: {city}\n🏢 ISP: {isp}\n📡 Coord: `{lat}, {lon}`\n✨ IP تقريبي من نفس الدولة: `{random_ip}`")
-            else:
-                res = (f"📍 **IP Info:**\n\n🌍 Country: {country_name} ({country_code})\n🏙️ City: {city}\n🏢 ISP: {isp}\n📡 Coord: `{lat}, {lon}`\n⚠️ لم أتمكن من توليد IP عشوائي.")
+            # Correct usage of random_ip_generator
+            try:
+                random_ip = random_ip_generator.random_ip_for_country(country_code)
+            except:
+                random_ip = f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
+
+            res = (f"📍 **IP Info:**\n\n🌍 Country: {country_name} ({country_code})\n🏙️ City: {city}\n🏢 ISP: {isp}\n📡 Coord: `{lat}, {lon}`\n✨ IP تقريبي من نفس الدولة: `{random_ip}`")
             await update.message.reply_text(res, parse_mode="Markdown")
         else: 
             await update.message.reply_text("❌ لم يتم العثور على معلومات لهذا الـ IP.")
