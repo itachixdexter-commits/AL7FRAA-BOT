@@ -24,11 +24,6 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 
-# New imports for Instagram, TikTok, and IP generation
-import instaloader
-from TikTokApi import TikTokApi
-import random_ip_generator
-
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -50,15 +45,14 @@ def run_health_server():
 async def start(update: Update, context) -> None:
     try:
         keyboard = [
-            [InlineKeyboardButton("🌐 سحب HTML", callback_data="get_html"), InlineKeyboardButton("📍 معلومات IP", callback_data="get_ip_info")],
-            [InlineKeyboardButton("📱 معلومات هاتف", callback_data="get_phone_info"), InlineKeyboardButton("📧 معلومات إيميل", callback_data="get_email_info")],
-            [InlineKeyboardButton("🔗 اختصار رابط", callback_data="shorten_url"), InlineKeyboardButton("🔍 فحص رابط", callback_data="scan_url")],
-            [InlineKeyboardButton("🎵 معلومات تيك", callback_data="tiktok_info"), InlineKeyboardButton("📸 معلومات انستا", callback_data="insta_info")],
-            [InlineKeyboardButton("🤖 حساب روبلوكس", callback_data="roblox_user"), InlineKeyboardButton("📜 سحب سورس", callback_data="get_source")],
-            [InlineKeyboardButton("🔐 تشفير VM", callback_data="encrypt_lua"), InlineKeyboardButton("🔓 فك تشفيرات", callback_data="advanced_deobf")],
-            [InlineKeyboardButton("📊 تحليل تشفير", callback_data="analyze_roblox"), InlineKeyboardButton("☠️ هجوم DDoS", callback_data="fake_ddos")],
-            [InlineKeyboardButton("💎 برومبت جيميني", callback_data="gemini_jailbreak"), InlineKeyboardButton("🌑 برومبت ديبسيك", callback_data="deepseek_jailbreak")],
-            [InlineKeyboardButton("😂 نكتة عشوائية", callback_data="get_joke")],
+            [InlineKeyboardButton("🌐 سحب HTML", callback_data='get_html'), InlineKeyboardButton("📍 معلومات IP", callback_data='get_ip_info')],
+            [InlineKeyboardButton("📱 معلومات هاتف", callback_data='get_phone_info'), InlineKeyboardButton("📧 معلومات إيميل", callback_data='get_email_info')],
+            [InlineKeyboardButton("🔗 اختصار رابط", callback_data='shorten_url'), InlineKeyboardButton("🔍 فحص رابط", callback_data='scan_url')],
+            [InlineKeyboardButton("🤖 حساب روبلوكس", callback_data='roblox_user'), InlineKeyboardButton("📜 سحب سورس", callback_data='get_source')],
+            [InlineKeyboardButton("🔐 تشفير VM", callback_data='encrypt_lua'), InlineKeyboardButton("🔓 فك تشفيرات", callback_data='advanced_deobf')],
+            [InlineKeyboardButton("📊 تحليل تشفير", callback_data='analyze_roblox'), InlineKeyboardButton("☠️ هجوم DDoS", callback_data='fake_ddos')],
+            [InlineKeyboardButton("💎 برومبت جيميني", callback_data='gemini_jailbreak'), InlineKeyboardButton("🌑 برومبت ديبسيك", callback_data='deepseek_jailbreak')],
+            [InlineKeyboardButton("😂 نكتة عشوائية", callback_data='get_joke')],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         msg = "🤖 **أهلاً بك في بوت الخدمات المتكاملة!**\n\nاختر الخدمة التي تريدها من الأزرار أدناه:"
@@ -73,54 +67,20 @@ async def button_callback(update: Update, context) -> None:
         query = update.callback_query
         await query.answer()
         data_map = {
-            "get_html": "awaiting_html_url", "get_ip_info": "awaiting_ip_address",
-            "get_phone_info": "awaiting_phone_number", "get_email_info": "awaiting_email_address",
-            "shorten_url": "awaiting_url_to_shorten", "scan_url": "awaiting_url_to_scan",
-            "tiktok_info": "awaiting_tiktok_user", "insta_info": "awaiting_insta_user",
-            "roblox_user": "awaiting_roblox_user", "get_source": "awaiting_script_link",
-            "encrypt_lua": "awaiting_lua_encrypt", "advanced_deobf": "awaiting_roblox_script",
-            "analyze_roblox": "awaiting_roblox_analyze", "fake_ddos": "awaiting_ddos_url"
+            'get_html': "awaiting_html_url", 'get_ip_info': "awaiting_ip_address",
+            'get_phone_info': "awaiting_phone_number", 'get_email_info': "awaiting_email_address",
+            'shorten_url': "awaiting_url_to_shorten", 'scan_url': "awaiting_url_to_scan",
+            'roblox_user': "awaiting_roblox_user", 'get_source': "awaiting_script_link",
+            'encrypt_lua': "awaiting_lua_encrypt", 'advanced_deobf': "awaiting_roblox_script",
+            'analyze_roblox': "awaiting_roblox_analyze", 'fake_ddos': "awaiting_ddos_url"
         }
         if query.data in data_map:
             context.user_data["state"] = data_map[query.data]
             await query.edit_message_text(f"📥 **الرجاء إرسال المطلوب للخدمة المختارة:**")
-        elif query.data == "get_joke": await get_joke(update, context)
-        elif query.data == "gemini_jailbreak": await send_gemini_jailbreak(update, context)
-        elif query.data == "deepseek_jailbreak": await send_deepseek_jailbreak(update, context)
+        elif query.data == 'get_joke': await get_joke(update, context)
+        elif query.data == 'gemini_jailbreak': await send_gemini_jailbreak(update, context)
+        elif query.data == 'deepseek_jailbreak': await send_deepseek_jailbreak(update, context)
     except Exception as e: logger.error(e)
-
-async def get_tiktok_info(update: Update, context) -> None:
-    username = update.message.text.strip().replace("@", "")
-    msg_wait = await update.message.reply_text("🔍 **جاري جلب معلومات تيك توك...**")
-    try:
-        async with TikTokApi() as api:
-            user = await api.user(username=username).info()
-            stats = user.get("stats", {})
-            followers = stats.get("followerCount", 0)
-            likes = stats.get("heartCount", 0)
-            res = (f"🎵 **TikTok Info:** @{username}\n\n👥 Followers: {followers:,}\n❤️ Likes: {likes:,}")
-            await msg_wait.edit_text(res, parse_mode="Markdown")
-    except Exception as e: 
-        logger.error(f"Error fetching TikTok info: {e}")
-        await msg_wait.edit_text(f"❌ حدث خطأ أثناء جلب معلومات تيك توك. تأكد من صحة اليوزر.")
-    finally: 
-        context.user_data["state"] = None
-
-async def get_insta_info(update: Update, context) -> None:
-    username = update.message.text.strip().replace("@", "")
-    msg_wait = await update.message.reply_text("🔍 **جاري جلب معلومات إنستقرام...**")
-    try:
-        L = instaloader.Instaloader()
-        profile = instaloader.Profile.from_username(L.context, username)
-        followers = profile.followers
-        posts = profile.mediacount
-        res = (f"📸 **Instagram Info:** @{username}\n\n👥 Followers: {followers:,}\n🖼️ Posts: {posts:,}")
-        await msg_wait.edit_text(res, parse_mode="Markdown")
-    except Exception as e: 
-        logger.error(f"Error fetching Instagram info: {e}")
-        await msg_wait.edit_text(f"❌ حدث خطأ أثناء جلب معلومات إنستغرام. تأكد من صحة اليوزر.")
-    finally: 
-        context.user_data["state"] = None
 
 async def get_roblox_user_info(update: Update, context) -> None:
     username = update.message.text.strip()
@@ -144,7 +104,7 @@ async def encrypt_lua_vm(update: Update, context) -> None:
     content = update.message.text if update.message.text else ""
     if update.message.document:
         file = await context.bot.get_file(update.message.document.file_id)
-        content = (await file.download_as_bytearray()).decode("utf-8", errors="ignore")
+        content = (await file.download_as_bytearray()).decode('utf-8', errors='ignore')
     if not content:
         await update.message.reply_text("❌ أرسل كود.")
         return
@@ -179,7 +139,7 @@ async def get_html_content(update: Update, context) -> None:
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
             resp = await client.get(url)
-        html = BeautifulSoup(resp.text, "html.parser").prettify()
+        html = BeautifulSoup(resp.text, 'html.parser').prettify()
         if len(html) > 4000:
             fname = f"h_{update.effective_user.id}.html"
             with open(fname, "w", encoding="utf-8") as f: f.write(html)
@@ -190,34 +150,16 @@ async def get_html_content(update: Update, context) -> None:
     finally: context.user_data["state"] = None
 
 async def get_ip_information(update: Update, context) -> None:
-    ip_input = update.message.text.strip()
+    ip = update.message.text.strip()
     try:
         async with httpx.AsyncClient() as client:
-            geo_data = (await client.get(f"http://ip-api.com/json/{ip_input}?lang=ar")).json()
-        
-        if geo_data.get("status") == "success":
-            country_code = geo_data.get("countryCode")
-            country_name = geo_data.get("country")
-            city = geo_data.get("city")
-            isp = geo_data.get("isp")
-            lat = geo_data.get("lat")
-            lon = geo_data.get("lon")
-
-            # Correct usage of random_ip_generator
-            try:
-                random_ip = random_ip_generator.random_ip_for_country(country_code)
-            except:
-                random_ip = f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
-
-            res = (f"📍 **IP Info:**\n\n🌍 Country: {country_name} ({country_code})\n🏙️ City: {city}\n🏢 ISP: {isp}\n📡 Coord: `{lat}, {lon}`\n✨ IP تقريبي من نفس الدولة: `{random_ip}`")
+            data = (await client.get(f"http://ip-api.com/json/{ip}?lang=ar")).json()
+        if data.get("status") == "success":
+            res = (f"📍 **IP Info:**\n\n🌍 Country: {data.get('country')}\n🏙️ City: {data.get('city')}\n🏢 ISP: {data.get('isp')}\n📡 Coord: `{data.get('lat')}, {data.get('lon')}`")
             await update.message.reply_text(res, parse_mode="Markdown")
-        else: 
-            await update.message.reply_text("❌ لم يتم العثور على معلومات لهذا الـ IP.")
-    except Exception as e: 
-        logger.error(f"Error in IP info: {e}")
-        await update.message.reply_text(f"❌ حدث خطأ: {e}")
-    finally: 
-        context.user_data["state"] = None
+        else: await update.message.reply_text("❌ Not found.")
+    except Exception as e: await update.message.reply_text(f"❌ Error: {e}")
+    finally: context.user_data["state"] = None
 
 async def scan_url_function(update: Update, context) -> None:
     url = update.message.text
@@ -282,7 +224,6 @@ async def handle_message(update: Update, context) -> None:
         "awaiting_phone_number": get_phone_information, "awaiting_email_address": get_email_information,
         "awaiting_url_to_shorten": shorten_url_function, "awaiting_roblox_script": deobfuscate_roblox_script,
         "awaiting_roblox_analyze": analyze_roblox_script, "awaiting_url_to_scan": scan_url_function,
-        "awaiting_tiktok_user": get_tiktok_info, "awaiting_insta_user": get_insta_info,
         "awaiting_roblox_user": get_roblox_user_info, "awaiting_lua_encrypt": encrypt_lua_vm,
         "awaiting_script_link": get_script_source, "awaiting_ddos_url": fake_ddos_attack
     }
