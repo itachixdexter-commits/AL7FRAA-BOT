@@ -140,17 +140,17 @@ async def get_ip_information(update: Update, context) -> None:
             response = await client.get(url)
             data = response.json()
 
-        if data.get(\'status\') == \'success\':
+        if data.get('status') == 'success':
             res = f"📍 **معلومات IP شاملة لـ:** `{ip}`\n\n"
             res += f"🏛️ **المنظمة:** {data.get('org', 'N/A')}\n"
-            res += f"🔢 **رقم ASN:** `{data.get(\'as\', \'N/A\').split(\' \')[0] if data.get(\'as\') != \'N/A\' else \'N/A\'}`\n"
+            res += f"🔢 **رقم ASN:** `{data.get('as', 'N/A').split(' ')[0] if data.get('as') != 'N/A' else 'N/A'}`\n"
 
             res += f"🌍 **القارة:** {data.get('continent', 'N/A')}\n"
             res += f"🏳️ **الدولة:** {data.get('country', 'N/A')} ({data.get('countryCode', 'N/A')})\n"
             res += f"🗺️ **المنطقة:** {data.get('regionName', 'N/A')}\n"
             res += f"🏙️ **المدينة:** {data.get('city', 'N/A')}\n"
             res += f"🕒 **المنطقة الزمنية:** {data.get('timezone', 'N/A')}\n"
-            res += f"💱 **العملة:** {data.get(\'currency\', \'N/A\')}\n\n"
+            res += f"💱 **العملة:** {data.get('currency', 'N/A')}\n\n"
             
             res += "🛡️ **فحص الحماية والشبكة:**\n"
             res += f"🔒 **VPN/Proxy/Tor:** {'✅ نعم' if data.get('proxy') else '❌ لا'}\n"
