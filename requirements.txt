@@ -1,0 +1,8 @@
+python-telegram-bot
+httpx
+beautifulsoup4
+pyshorteners
+Pillow
+phonenumbers
+dnspython
+pyjokes
