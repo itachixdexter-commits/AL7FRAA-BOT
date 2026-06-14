@@ -6,6 +6,6 @@ pillow
 phonenumbers
 dnspython
 pyjokes
-random-ip-generator
+random_ip_for_country
 instaloader
 TikTokApi
