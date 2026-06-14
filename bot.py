@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("TELEGRAM_TOKEN", "8799736027:AAFbJqNIScYYsx8bHmn227nBLubTYsgY18I")
 VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "b8163d15425405d2ee349307c044811bc0955078fb7f1057bc99d3dd216bb1bb")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
 
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
