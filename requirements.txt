@@ -1,8 +1,8 @@
-python-telegram-bot==20.3
+python-telegram-bot
 httpx
 beautifulsoup4
 pyshorteners
-pillow
+Pillow
 phonenumbers
 dnspython
 pyjokes
