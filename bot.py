@@ -221,7 +221,7 @@ async def encrypt_lua_vm(update: Update, context) -> None:
         return
     try:
         enc = base64.b64encode(zlib.compress(content.encode())).decode()
-        vm = f'-- Encrypted by Manus VM\nlocal _ = "{enc}"\nload(zlib_decompress(base64_decode(_)))()'
+        vm = f'-- Encrypted by bot VM\nlocal _ = "{enc}"\nload(zlib_decompress(base64_decode(_)))()'
         fname = f"vm_{update.effective_user.id}.lua"
         with open(fname, "w") as f: f.write(vm)
         await update.message.reply_document(document=open(fname, "rb"), caption="✅ **VM Encryption Done!**")
