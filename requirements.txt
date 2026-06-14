@@ -6,4 +6,3 @@ pillow
 phonenumbers
 dnspython
 pyjokes
-openai
