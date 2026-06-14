@@ -6,6 +6,3 @@ pillow
 phonenumbers
 dnspython
 pyjokes
-random_ip_for_country
-instaloader
-TikTokApi
