@@ -18,6 +18,7 @@ import pyjokes
 import asyncio
 import random
 import os
+import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -29,6 +30,13 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("TELEGRAM_TOKEN", "8799736027:AAFbJqNIScYYsx8bHmn227nBLubTYsgY18I")
 VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "b8163d15425405d2ee349307c044811bc0955078fb7f1057bc99d3dd216bb1bb")
 IPGEOLOCATION_API_KEY = os.getenv("IPGEOLOCATION_API_KEY", "")
+
+COUNTRY_NAMES = {
+    "SA": "السعودية 🇸🇦", "KW": "الكويت 🇰🇼", "AE": "الإمارات 🇦🇪", "QA": "قطر 🇶🇦", "BH": "البحرين 🇧🇭", "OM": "عمان 🇴🇲",
+    "EG": "مصر 🇪🇬", "JO": "الأردن 🇯🇴", "LB": "لبنان 🇱🇧", "SY": "سوريا 🇸🇾", "IQ": "العراق 🇮🇶", "MA": "المغرب 🇲🇦",
+    "DZ": "الجزائر 🇩🇿", "TN": "تونس 🇹🇳", "LY": "ليبيا 🇱🇾", "SD": "السودان 🇸🇩", "YE": "اليمن 🇾🇪", "PS": "فلسطين 🇵🇸",
+    "US": "الولايات المتحدة 🇺🇸", "GB": "بريطانيا 🇬🇧", "TR": "تركيا 🇹🇷", "FR": "فرنسا 🇫🇷", "DE": "ألمانيا 🇩🇪"
+}
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -52,7 +60,7 @@ async def start(update: Update, context) -> None:
             [InlineKeyboardButton("🔐 تشفير VM", callback_data='encrypt_lua'), InlineKeyboardButton("🔓 فك تشفيرات", callback_data='advanced_deobf')],
             [InlineKeyboardButton("📊 تحليل تشفير", callback_data='analyze_roblox'), InlineKeyboardButton("☠️ هجوم DDoS", callback_data='fake_ddos')],
             [InlineKeyboardButton("💎 برومبت جيميني", callback_data='gemini_jailbreak'), InlineKeyboardButton("🌑 برومبت ديبسيك", callback_data='deepseek_jailbreak')],
-            [InlineKeyboardButton("😂 نكتة عشوائية", callback_data='get_joke')],
+            [InlineKeyboardButton("🎵 معلومات تيك توك", callback_data='tiktok_user'), InlineKeyboardButton("😂 نكتة عشوائية", callback_data='get_joke')],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         msg = "🤖 **أهلاً بك في بوت الخدمات المتكاملة!**\n\nاختر الخدمة التي تريدها من الأزرار أدناه:"
@@ -79,6 +87,10 @@ async def button_callback(update: Update, context) -> None:
             'get_phone_info': {
                 'state': "awaiting_phone_number",
                 'desc': "📱 **خدمة معلومات الهاتف:**\nتحدد الدولة والمنطقة الخاصة برقم الهاتف المدخل.\n\n📥 **الرجاء إرسال رقم الهاتف مع رمز الدولة (مثال: +966...):**"
+            },
+            'get_ip_info': {
+                'state': "awaiting_ip_address",
+                'desc': "📍 **خدمة معلومات IP:**\nتزودك بتفاصيل الموقع الجغرافي ومزود الخدمة لأي عنوان IP.\n\n📥 **الرجاء إرسال عنوان الـ IP:**"
             },
             'get_email_info': {
                 'state': "awaiting_email_address",
@@ -115,6 +127,10 @@ async def button_callback(update: Update, context) -> None:
             'fake_ddos': {
                 'state': "awaiting_ddos_url",
                 'desc': "☠️ **خدمة محاكاة هجوم DDoS:**\nتقوم بعمل محاكاة بصرية لعملية الهجوم على هدف معين.\n\n📥 **الرجاء إرسال رابط الهدف أو الـ IP:**"
+            },
+            'tiktok_user': {
+                'state': "awaiting_tiktok_user",
+                'desc': "🎵 **خدمة معلومات تيك توك:**\nتجلب معلومات كاملة وحقيقية عن أي حساب تيك توك.\n\n📥 **الرجاء إرسال اسم المستخدم (Username):**"
             }
         }
         
@@ -131,8 +147,6 @@ async def button_callback(update: Update, context) -> None:
 
 async def get_ip_information(update: Update, context) -> None:
     ip = update.message.text.strip()
-
-
     msg_wait = await update.message.reply_text("🔍 **جاري جلب معلومات الـ IP التفصيلية...**")
     try:
         async with httpx.AsyncClient() as client:
@@ -144,19 +158,16 @@ async def get_ip_information(update: Update, context) -> None:
             res = f"📍 **معلومات IP شاملة لـ:** `{ip}`\n\n"
             res += f"🏛️ **المنظمة:** {data.get('org', 'N/A')}\n"
             res += f"🔢 **رقم ASN:** `{data.get('as', 'N/A').split(' ')[0] if data.get('as') != 'N/A' else 'N/A'}`\n"
-
             res += f"🌍 **القارة:** {data.get('continent', 'N/A')}\n"
             res += f"🏳️ **الدولة:** {data.get('country', 'N/A')} ({data.get('countryCode', 'N/A')})\n"
             res += f"🗺️ **المنطقة:** {data.get('regionName', 'N/A')}\n"
             res += f"🏙️ **المدينة:** {data.get('city', 'N/A')}\n"
             res += f"🕒 **المنطقة الزمنية:** {data.get('timezone', 'N/A')}\n"
             res += f"💱 **العملة:** {data.get('currency', 'N/A')}\n\n"
-            
             res += "🛡️ **فحص الحماية والشبكة:**\n"
             res += f"🔒 **VPN/Proxy/Tor:** {'✅ نعم' if data.get('proxy') else '❌ لا'}\n"
             res += f"☁️ **Hosting:** {'✅ نعم' if data.get('hosting') else '❌ لا'}\n"
             res += f"📱 **Mobile:** {'✅ نعم' if data.get('mobile') else '❌ لا'}\n"
-            
             await msg_wait.edit_text(res, parse_mode="Markdown")
         else:
             await msg_wait.edit_text(f"❌ خطأ من API: {data.get('message', 'خطأ غير معروف')}")
@@ -315,6 +326,79 @@ async def shorten_url_function(update: Update, context) -> None:
     except: await update.message.reply_text("❌ Error.")
     finally: context.user_data["state"] = None
 
+async def get_tiktok_user_info(update: Update, context) -> None:
+    username = update.message.text.strip()
+    if username.startswith('@'): username = username[1:]
+    
+    msg_wait = await update.message.reply_text("🔍 **جاري جلب معلومات تيك توك الحقيقية...**")
+    
+    url = f"https://www.tiktok.com/@{username}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code != 200:
+            await msg_wait.edit_text(f"❌ فشل في جلب الصفحة (كود: {response.status_code}). تأكد من صحة اليوزر.")
+            return
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        script_tag = soup.find('script', id='__UNIVERSAL_DATA_FOR_REHYDRATION__')
+        
+        if not script_tag:
+            script_tag = soup.find('script', id='SIGI_STATE')
+            
+        if script_tag:
+            data = json.loads(script_tag.string)
+            try:
+                # Structure for __UNIVERSAL_DATA_FOR_REHYDRATION__
+                u_detail = data.get('__DEFAULT_SCOPE__', {}).get('webapp.user-detail', {})
+                if not u_detail:
+                    # Alternative structure check
+                    u_detail = data.get('webapp.user-detail', {})
+                
+                user_info = u_detail.get('userInfo', {})
+                if not user_info:
+                    await msg_wait.edit_text("❌ لم يتم العثور على بيانات المستخدم في الرد.")
+                    return
+                
+                stats = user_info.get('stats', {})
+                user = user_info.get('user', {})
+                
+                nick = user.get('nickname', 'N/A')
+                uid = user.get('uniqueId', username)
+                avatar = user.get('avatarLarger', '')
+                foll = stats.get('followerCount', 0)
+                vids = stats.get('videoCount', 0)
+                reg = user.get('region', 'Unknown')
+                country = COUNTRY_NAMES.get(reg, reg)
+                
+                res = f"🎵 **معلومات حساب تيك توك:**\n\n"
+                res += f"👤 **الاسم:** {nick}\n"
+                res += f"🆔 **اليوزر:** @{uid}\n"
+                res += f"🌍 **الدولة:** {country}\n"
+                res += f"👥 **المتابعين:** {foll:,}\n"
+                res += f"🎬 **الفيديوهات:** {vids:,}\n"
+                res += f"🔗 **الرابط:** [اضغط هنا]({url})\n"
+                
+                if avatar:
+                    await update.message.reply_photo(photo=avatar, caption=res, parse_mode="Markdown")
+                    await msg_wait.delete()
+                else:
+                    await msg_wait.edit_text(res, parse_mode="Markdown")
+            except Exception as e:
+                await msg_wait.edit_text(f"❌ خطأ في تحليل البيانات: {str(e)}")
+        else:
+            await msg_wait.edit_text("❌ لم يتم العثور على بيانات الحساب. قد يكون الحساب خاصاً أو غير موجود.")
+            
+    except Exception as e:
+        await msg_wait.edit_text(f"❌ حدث خطأ أثناء الجلب: {str(e)}")
+    finally:
+        context.user_data["state"] = None
+
 async def handle_message(update: Update, context) -> None:
     state = context.user_data.get("state")
     if not state: return
@@ -324,9 +408,14 @@ async def handle_message(update: Update, context) -> None:
         "awaiting_url_to_shorten": shorten_url_function, "awaiting_roblox_script": deobfuscate_roblox_script,
         "awaiting_roblox_analyze": analyze_roblox_script, "awaiting_url_to_scan": scan_url_function,
         "awaiting_roblox_user": get_roblox_user_info, "awaiting_lua_encrypt": encrypt_lua_vm,
-        "awaiting_script_link": get_script_source, "awaiting_ddos_url": fake_ddos_attack
+        "awaiting_script_link": get_source_script, "awaiting_ddos_url": fake_ddos_attack,
+        "awaiting_tiktok_user": get_tiktok_user_info
     }
-    if state in funcs: await funcs[state](update, context)
+    # Fixing function name mismatch in original code for get_source
+    if state == "awaiting_script_link":
+        await get_script_source(update, context)
+    elif state in funcs:
+        await funcs[state](update, context)
 
 def main() -> None:
     threading.Thread(target=run_health_server, daemon=True).start()
